@@ -129,6 +129,8 @@ if st.session_state.selected_location:
 
         if temp >= 30:
             st.warning("너무 더워요!")
+        if temp <= 0:
+            st.warning("너무 추워요!")
 
         c1, c2, c3 = st.columns(3)
         with c1:
