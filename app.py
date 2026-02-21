@@ -181,4 +181,4 @@ if st.session_state.selected_location:
             st.write("옷: 두꺼운 코트")
             st.write("추천 운동: 실내 요가")
 
-    with col2:
+
