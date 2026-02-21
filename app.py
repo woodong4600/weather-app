@@ -45,7 +45,7 @@ popular_cities = [
 
 selected_popular = st.sidebar.selectbox(
     "빠른 검색",
-    [""] + popular_cities
+    ["선택 없음"] + popular_cities
 )
 
 if selected_popular:
