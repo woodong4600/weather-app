@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 from streamlit_js_eval import get_geolocation
 
-st.set_page_config(page_title="Global Weather", layout="wide")
+st.set_page_config(page_title="날씨", layout="wide")
 
 API_KEY = st.secrets["WEATHER_API_KEY"]
 
@@ -13,17 +13,17 @@ API_KEY = st.secrets["WEATHER_API_KEY"]
 if "selected_location" not in st.session_state:
     st.session_state.selected_location = None
 
-st.title("Global Weather App")
+st.title("날씨")
 
 # -------------------------
 # 사이드바
 # -------------------------
-st.sidebar.header("Search")
+st.sidebar.header("검색")
 
-city_input = st.sidebar.text_input("City name (English only)")
-gps_button = st.sidebar.button("Use My Location (GPS)")
+city_input = st.sidebar.text_input("도시 이름(영어)")
+gps_button = st.sidebar.button("내 위치(GPS)")
 
-st.sidebar.markdown("### Popular Cities")
+st.sidebar.markdown("### 인기 지역")
 
 popular_cities = [
     "Seoul","Busan","Tokyo","Osaka","Beijing","Shanghai",
@@ -44,7 +44,7 @@ popular_cities = [
 ]
 
 selected_popular = st.sidebar.selectbox(
-    "Quick Select",
+    "빠른 검색",
     [""] + popular_cities
 )
 
@@ -182,12 +182,3 @@ if st.session_state.selected_location:
             st.write("추천 운동: 실내 요가")
 
     with col2:
-        st.subheader("지역 지도")
-
-        map_url = f"https://map.naver.com/v5/search/{location_name}"
-        iframe = f"""
-        <iframe src="{map_url}"
-        width="100%" height="500"
-        style="border:none;"></iframe>
-        """
-        st.components.v1.html(iframe, height=500)
