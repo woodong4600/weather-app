@@ -3,50 +3,58 @@ import requests
 import pandas as pd
 from streamlit_js_eval import get_geolocation
 
-st.set_page_config(page_title="전 세계 날씨", layout="wide")
+st.set_page_config(page_title="Global Weather", layout="wide")
 
 API_KEY = st.secrets["WEATHER_API_KEY"]
 
 # -------------------------
-# 세션 초기화
+# 세션 상태
 # -------------------------
 if "selected_location" not in st.session_state:
     st.session_state.selected_location = None
 
-if "search_trigger" not in st.session_state:
-    st.session_state.search_trigger = 0
-
-st.title("전 세계 날씨 앱")
+st.title("Global Weather App")
 
 # -------------------------
 # 사이드바
 # -------------------------
-st.sidebar.header("검색")
+st.sidebar.header("Search")
 
-city_input = st.sidebar.text_input("도시 이름 입력 (영어)")
-search_button = st.sidebar.button("검색")
-gps_button = st.sidebar.button("내 위치 사용")
+city_input = st.sidebar.text_input("City name (English only)")
+gps_button = st.sidebar.button("Use My Location (GPS)")
 
-st.sidebar.markdown("### 빠른 검색")
+st.sidebar.markdown("### Popular Cities")
 
 popular_cities = [
-    "Seoul","Busan","Tokyo","London","Paris",
-    "New York","Los Angeles","Singapore","Bangkok","Dubai"
+    "Seoul","Busan","Tokyo","Osaka","Beijing","Shanghai",
+    "Bangkok","Singapore","Kuala Lumpur","Jakarta",
+    "Delhi","Mumbai","Dubai","Istanbul",
+    "Paris","London","Berlin","Rome","Madrid",
+    "Amsterdam","Vienna","Prague","Budapest",
+    "New York","Los Angeles","Chicago","Toronto",
+    "Vancouver","Mexico City",
+    "Rio de Janeiro","Sao Paulo","Buenos Aires",
+    "Sydney","Melbourne","Auckland",
+    "Cairo","Cape Town","Nairobi",
+    "Moscow","Warsaw","Athens",
+    "Hong Kong","Taipei","Manila",
+    "Hanoi","Ho Chi Minh City",
+    "San Francisco","Las Vegas",
+    "Doha","Zurich"
 ]
 
-quick_city = st.sidebar.selectbox("도시 선택", [""] + popular_cities)
+selected_popular = st.sidebar.selectbox(
+    "Quick Select",
+    [""] + popular_cities
+)
+
+if selected_popular:
+    city_input = selected_popular
 
 # -------------------------
-# 빠른 검색 선택 시 → 검색창 값만 변경
-# -------------------------
-if quick_city:
-    city_input = quick_city
-
-# -------------------------
-# GPS 버튼
+# GPS
 # -------------------------
 if gps_button:
-    st.session_state.selected_location = None
     loc = get_geolocation()
     if loc:
         lat = loc["coords"]["latitude"]
@@ -54,20 +62,34 @@ if gps_button:
         st.session_state.selected_location = f"{lat},{lon}"
 
 # -------------------------
-# 검색 버튼 눌렀을 때만 실행
+# 자동완성 검색
 # -------------------------
-if search_button and city_input:
-    st.session_state.selected_location = None
+if city_input:
 
     search_url = f"http://api.weatherapi.com/v1/search.json?key={API_KEY}&q={city_input}"
     search_response = requests.get(search_url)
     search_data = search_response.json()
 
     if len(search_data) > 0:
-        st.session_state.selected_location = search_data[0]["name"]
+
+        options = []
+        for item in search_data:
+            label = f"{item['name']}, {item['region']}, {item['country']}"
+            value = item["name"]
+            options.append((label, value))
+
+        selected_label = st.sidebar.selectbox(
+            "Select Location",
+            [o[0] for o in options],
+            key=f"select_{city_input}"
+        )
+
+        for o in options:
+            if o[0] == selected_label:
+                st.session_state.selected_location = o[1]
 
 # -------------------------
-# 날씨 표시
+# 날씨 조회
 # -------------------------
 if st.session_state.selected_location:
 
@@ -98,7 +120,7 @@ if st.session_state.selected_location:
     elif "눈" in condition:
         icon = "☃️"
 
-    col1, col2 = st.columns([2,1])
+    col1, col2 = st.columns([2, 1])
 
     with col1:
         st.header(f"{location_name}, {country}")
@@ -112,18 +134,18 @@ if st.session_state.selected_location:
         with c1:
             st.metric("습도", f"{humidity}%")
         with c2:
-            st.metric("체감 온도", f"{feelslike}°C")
+            st.metric("체감온도", f"{feelslike}°C")
         with c3:
             st.metric("자외선 지수", uv)
 
         st.markdown("---")
-        st.write("대기질(PM2.5):", f"{aqi} μg/m³")
+        st.write("대기질 PM2.5:", f"{aqi} μg/m³")
         st.write("일출:", sunrise)
         st.write("일몰:", sunset)
         st.write("달 모양:", moon_phase)
 
         # 시간별 그래프
-        st.subheader("시간별 기온")
+        st.subheader("시간별 온도 변화")
 
         hours = data["forecast"]["forecastday"][0]["hour"]
 
@@ -135,31 +157,32 @@ if st.session_state.selected_location:
             temp_list.append(h["temp_c"])
 
         df = pd.DataFrame({
-            "시간": hour_list,
-            "기온": temp_list
-        }).set_index("시간")
+            "Time": hour_list,
+            "Temperature": temp_list
+        }).set_index("Time")
 
         st.line_chart(df)
 
+        # 추천
         st.markdown("---")
         st.subheader("추천 정보")
 
         if temp >= 30:
-            st.write("옷차림: 반팔, 반바지")
+            st.write("옷: 반팔, 반바지")
             st.write("소지품: 선크림, 물")
-            st.write("추천 운동: 실내 운동")
+            st.write("추천 운동: 실내 운동, 수영")
         elif temp >= 20:
-            st.write("옷차림: 얇은 긴팔")
-            st.write("추천 운동: 러닝")
+            st.write("옷: 얇은 긴팔")
+            st.write("추천 운동: 러닝, 자전거")
         elif temp >= 10:
-            st.write("옷차림: 자켓")
+            st.write("옷: 자켓")
             st.write("추천 운동: 산책")
         else:
-            st.write("옷차림: 두꺼운 코트")
+            st.write("옷: 두꺼운 코트")
             st.write("추천 운동: 실내 요가")
 
     with col2:
-        st.subheader("지도")
+        st.subheader("지역 지도")
 
         map_url = f"https://map.naver.com/v5/search/{location_name}"
         iframe = f"""
